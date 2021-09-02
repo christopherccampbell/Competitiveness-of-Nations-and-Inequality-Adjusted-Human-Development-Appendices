@@ -1,0 +1,73 @@
+Appendix F: Random Forest Model
+
+# Random Forest built using Python on Google Collaboratory
+# load necessary packages
+from sklearn.ensemble import RandomForestClassifier
+import numpy as np
+from pandas import read_csv
+from sklearn.preprocessing import LabelEncoder
+from sklearn.model_selection import cross_val_score
+# load dataset
+from google.colab import files
+file = files.upload()
+dataframe = read_csv("DATAFILE.csv")
+dataset = dataframe.values
+# split into input (X) and output (Y) variables
+X = dataset[:,0:15].astype(float)
+Y = dataset[:,15]
+# encode class values as integers
+encoder = LabelEncoder()
+encoder.fit(Y)
+encoded_Y = encoder.transform(Y)
+# Build Classification Task
+# Determine best value for the 'n_estimators' (number of trees) parameter
+n_estimators = [50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350]
+train_resultsa = []
+test_resultsa = []
+for estimator in n_estimators:
+  foresta = RandomForestClassifier(n_estimators=estimator,
+                                random_state=0)
+  foresta.fit(X, encoded_Y)
+  train_resultsa.append((np.mean(foresta.predict(X) == encoded_Y)*100))
+  test_resultsa.append((round(100*np.mean(cross_val_score(foresta, X, encoded_Y, cv=10, n_jobs=-1)),2)))
+  from matplotlib.legend_handler import HandlerLine2D
+  import matplotlib.pyplot as plt
+line1, = plt.plot(n_estimators, train_resultsa, "b", label="Training Accuracy")
+line2, = plt.plot(n_estimators, test_resultsa, "r", label="Cross Validation Accuracy")
+plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
+plt.ylabel("Accuracy")
+plt.xlabel("Number of Trees")
+plt.show()
+# Determine best value for the 'cv' (K-fold) parameter
+cvs = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20]
+train_resultsb = []
+test_resultsb = []
+for cv in cvs:
+  forestb = RandomForestClassifier(n_estimators=250,
+                                random_state=0)
+  forestb.fit(X, encoded_Y)
+  train_resultsb.append((np.mean(forestb.predict(X) == encoded_Y)*100))
+  test_resultsb.append((round(100*np.mean(cross_val_score(forestb, X, encoded_Y, cv=cv, n_jobs=-1)),2)))
+from matplotlib.legend_handler import HandlerLine2D
+import matplotlib.pyplot as plt
+line2, = plt.plot(cvs, test_resultsb, "r", label="Cross Validation Accuracy")
+plt.legend(handler_map={line1: HandlerLine2D(numpoints=2)})
+plt.ylabel("Accuracy")
+plt.xlabel("Number of Folds (K-values)")
+plt.show()
+# Run model using optimum features
+forestc = RandomForestClassifier(n_estimators=250,
+                                random_state=0)
+forestc.fit(X, encoded_Y)
+print('Training accuracy: ', np.mean(forestc.predict(X) == encoded_Y)*100)
+print ('Cross validate accuracy: ',round(100*np.mean(cross_val_score(forestc, X, encoded_Y, cv=13, n_jobs=-1)),2))
+importance_vals = forestc.feature_importances_
+print(importance_vals)
+Name = list()
+for col in dataframe.columns: 
+    Name.append(col)
+# Plot Relative importance
+import matplotlib.pyplot as plt
+plt.title("Neural network relative importance")
+plt.bar(Name[0:15], importance_vals, label='Relative importance')
+plt.legend()
